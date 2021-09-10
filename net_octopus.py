@@ -6,7 +6,7 @@ import DBoctopus as db
 import argparse
 import os
 
-lan_list = [['0.0.0.', range(2, 254 ), 'admin', 'admin_pass']]  # list of lan with ip_range, user_name, user_pass
+lan_list = [['192.168.0.', range(2, 16), 'admin6881', 'Casu1032']]  # list of lan with ip_range, user_name, user_pass
 lan = nh.NEThelper(lan_list)
 
 def install():
