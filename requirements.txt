@@ -1,0 +1,3 @@
+paramiko
+SQLAlchemy
+psycopg2-binary
