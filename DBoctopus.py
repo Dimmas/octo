@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, mapper
 import time
 
 
-engine = create_engine('postgresql://postgres:Obron1587@localhost:5432/postgres', pool_size=20)
+engine = create_engine('postgresql://postgres:Pwd@localhost:5432/postgres', pool_size=20)
 Session = sessionmaker(bind=engine)
 metadata = MetaData()
 
