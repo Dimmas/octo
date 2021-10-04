@@ -110,7 +110,7 @@ class NEThelper:
 
 if __name__ == '__main__':
 
-        lan_list = [['10.3.67.',range(1,254),'admin6881', 'Casu1032']] # list of lan with ip_range, user_name, user_pass
+        lan_list = [['0.0.0.',range(1,254),'admin', 'pwd']] # list of lan with ip_range, user_name, user_pass
 
         lan = NEThelper(lan_list)
 
