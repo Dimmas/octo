@@ -1,0 +1,5 @@
+paramiko
+apt_repo
+SQLAlchemy
+psycopg2-binary
+pyyaml
