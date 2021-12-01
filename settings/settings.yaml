@@ -1,0 +1,14 @@
+networks:
+  - lan: 192.168.0.
+    pwd: Casu1032
+    range:
+      - 2
+      - 254
+    usr: admin6881
+db_connection:
+  dbms: postgresql
+  usr: postgres
+  pwd: Obron1587
+  host: localhost
+  port: 5432
+  db: postgres
