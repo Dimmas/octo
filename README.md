@@ -64,7 +64,7 @@ full text file search lan system
           
         usr: admin  # логин локального админа 1
         
-       - lan: 192.168.2. # первые три октета второй сети
+      - lan: 192.168.2. # первые три октета второй сети
        
         pwd: SecretPWD # пароль локального админа 2
         
@@ -96,9 +96,9 @@ full text file search lan system
 
     На удаленный хост из каталога exfiles будут доставлены следующие файлы конфигурации recoll и cron:
 
-      /root/.recoll/recoll.conf
+          /root/.recoll/recoll.conf
 
-      /var/spool/cron/crontabs/root
+          /var/spool/cron/crontabs/root
 
       Для запуска настройки хостов для работы с octo выполните: # python3 octo.py install
     
@@ -108,7 +108,7 @@ full text file search lan system
     В планировщике cron каждого хоста добавлено задание на индексацию каждый день в 13.00.
     В случае необходимости ручного запуска индексирования на хостах в сети выполните:
     
-    # python3 octo.py index,
+    **# python3 octo.py index,**
     
     или    # python3 octo.py , а затем пункт 4 
     
