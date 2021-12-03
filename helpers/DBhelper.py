@@ -86,4 +86,4 @@ class File(DBModel):
 
 mapper(File, file_tab)  # join File object with table 'files' in DB
 #if not engine.dialect.has_table(engine, file_tab.name): metadata.create_all(engine)
-if not sqlalchemy.inspect(engine).has_table(file_tab.name): metadata.create
+if not sqlalchemy.inspect(engine).has_table(file_tab.name): metadata.create_all(engine)
