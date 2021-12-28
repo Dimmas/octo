@@ -1,7 +1,4 @@
-# !/usr/bin/python3.5
-# -*- coding: utf-8 -*-
 
-import os
 from concurrent.futures import ThreadPoolExecutor
 from helpers import LANhelper as lh, PKGhelper as ph, YAMLhelper as yh
 
@@ -115,62 +112,3 @@ class NEThelper:
             exe.map(host_tasks, list(ip_range), timeout=120)
 
         return len(self.__success_list)
-
-
-if __name__ == '__main__':
-
-    settings = yh.YAMLhelper()
-    networks = settings.get_networks()  # list of lan with ip_range, user_name, user_pass
-    lan = NEThelper(networks)
-
-    # reading and check action
-    while True:
-        action = int(input('Для работы с пакетами нажмите 1, файлами - 2, командами - 3: '))
-        if not action in range(1, 4):
-            print('ошибка ввода данных')
-        else:
-            break
-
-    if action == 1:
-        while True:
-            event = int(input('Для установки пакетов нажмите 1, удаления - 2: '))
-            if not event in range(1, 3):
-                print('ошибка ввода данных')
-            else:
-                action += event * 10
-                break
-    if action == 2:
-        while True:
-            event = int(input('Для копирования файлов с удаленного хоста нажмите 1, на удаленный хост - 2: '))
-            if not event in range(1, 3):
-                print('ошибка ввода данных')
-            else:
-                action += event * 10
-                break
-    if action == 3:
-        cmd = input('Введите команду для удаленного хоста: ')
-        lan.add_task(['cmd', cmd])
-
-    if action == 11 or action == 21:
-        while True:
-            package_list = input('ВВедите названия пакетов (через пробел): ').split(' ')
-            error = False
-            for package in package_list:
-                data = os.popen('apt search ' + package + ' | grep -i ^' + package + '\/ ').read()
-                if not package in data:
-                    print(package + ' отсутствует в репозитории. Проверьте правильность имени пакета.')
-                    error = True
-            if not error:
-                break
-        if action == 11:
-            lan.add_task(['package', 'install', package_list])
-        if action == 21:
-            lan.add_task(['package', 'purge', package_list])
-    if action == 12:
-        local_path = input('Введите путь к локальному каталогу назначения: ')
-        remote_path = input('Введите путь к файлу на удаленном хосте: ')
-        lan.add_task(['file', 'export', [local_path, remote_path]])
-    if action == 22:
-        remote_path = input('Введите путь к каталогу назначения на удаленном хосте: ')
-        local_path = input('Введите путь к локальному файлу: ')
-        lan.add_task(['file', 'import', [remote_path, local_path]])

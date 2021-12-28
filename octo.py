@@ -1,11 +1,14 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3.9
 # -*- coding: utf-8 -*-
 import argparse
 import os
-from helpers import NEThelper as nh, DBhelper as db, YAMLhelper as yh
 
-networks = yh.YAMLhelper().get_networks()  # list of lan with ip_range, user_name, user_pass
-lan = nh.NEThelper(networks)
+from helpers.NEThelper import NEThelper
+from helpers.DBhelper import File
+from helpers.YAMLhelper import YAMLhelper
+
+networks = YAMLhelper().get_networks()  # list of lan with ip_range, user_name, user_pass
+lan = NEThelper(networks)
 
 
 def install():
@@ -51,19 +54,19 @@ def push_db(responce, cmd, lh):
             prop['text'] = lh.exec_command('sudo docx2txt "' + prop['rcludi'] + '" -', fn)
         if expansion == '.doc':
             prop['text'] = lh.exec_command('sudo antiword "' + prop['rcludi'] + '"', fn)
-        file_record = db.File({'url': prop['url'], 'ip': lh.ip})  # check DB for existing record width this properties
+        file_record = File({'url': prop['url'], 'ip': lh.ip})  # check DB for existing record width this properties
         return file_record.add(prop)
 
     fcount = 0
     prop = {}  # file properties parsed from recoll output
-    fields = db.File.properties  # read fields for file object
+    fields = File.properties  # read fields for file object
     for line in responce.split('\n'):
-        fo = line.split(' = ')
-        if fo[0] in fields:
-            if fo[0] in prop.keys():
+        par = line.split(' = ')
+        if par[0] in fields:
+            if par[0] in prop.keys():
                 if write_db(prop): fcount += 1
                 prop = {}
-            prop[fo[0]] = fo[1]
+            prop[par[0]] = par[1]
     if write_db(prop): fcount += 1  # write to DB last result, or the only result
     return lh.ip + ' scan completed (' + str(fcount) + ' results)'
 

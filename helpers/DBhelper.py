@@ -1,14 +1,11 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 import time
 
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, BigInteger, String, Text
 from sqlalchemy.orm import sessionmaker, mapper
-from helpers import YAMLhelper as yh
+from helpers.YAMLhelper import YAMLhelper
 import sqlalchemy
 
-db_connection = yh.YAMLhelper().get_db_connection()
+db_connection = YAMLhelper().get_db_connection()
 
 engine = create_engine(db_connection, pool_size=20)
 Session = sessionmaker(bind=engine)
@@ -85,5 +82,4 @@ class File(DBModel):
 
 
 mapper(File, file_tab)  # join File object with table 'files' in DB
-#if not engine.dialect.has_table(engine, file_tab.name): metadata.create_all(engine)
 if not sqlalchemy.inspect(engine).has_table(file_tab.name): metadata.create_all(engine)

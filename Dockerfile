@@ -1,4 +1,4 @@
-FROM python:3.6-slim
+FROM python:3.9-slim
 
 RUN mkdir -p /usr/src/octo
 WORKDIR /usr/src/octo
