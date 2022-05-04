@@ -1,14 +1,14 @@
 networks:
-  - lan: 192.168.0.
-    pwd: Casu1032
+  - lan: 10.0.0.
+    pwd: SecretPass
     range:
       - 2
       - 254
-    usr: admin6881
+    usr: my_username
 db_connection:
   dbms: postgresql
   usr: postgres
-  pwd: Obron1587
+  pwd: DBPwd
   host: localhost
   port: 5432
   db: postgres
