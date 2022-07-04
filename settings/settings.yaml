@@ -2,7 +2,7 @@ user:
 # This block specifies a common user account for all networks listed in the "networks" section
 # The username can be a domain name. For example: domain\username
   usr: admin
-#  pwd: AdminSecretPassword
+# pwd: AdminSecretPassword
 networks:
 # You can specify multiple networks to scan with individual settings for each
 #excamples:
