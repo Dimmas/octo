@@ -1,14 +1,30 @@
+user:
+# This block specifies a common user account for all networks listed in the "networks" section
+# The username can be a domain name. For example: domain\username
+  usr: admin
+#  pwd: AdminSecretPassword
 networks:
-  - lan: 10.0.0.
-    pwd: SecretPass
-    range:
-      - 2
-      - 254
-    usr: my_username
+# You can specify multiple networks to scan with individual settings for each
+#excamples:
+# - lan: 192.168.0.0/24
+#   usr: admin
+#   pwd: AdminSecretPassword
+
+# specify the network settings without specifying the user password
+# (the password will be requested during the execution of the program)
+# - lan: 192.168.1.0/28
+#   usr: admin
+
+# specify the network settings without specifying the username and password
+# (the username and password will be requested during the execution of the program)
+# - lan: 192.168.2.0/30
+
+  - lan: 192.168.88.0/24
+
 db_connection:
   dbms: postgresql
   usr: postgres
-  pwd: DBPwd
+  pwd: SuperPwdDataBase
   host: localhost
   port: 5432
   db: postgres

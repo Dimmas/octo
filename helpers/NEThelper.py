@@ -1,15 +1,16 @@
-
+from ipaddress import IPv4Address, IPv4Network
 from concurrent.futures import ThreadPoolExecutor
-from helpers import LANhelper as lh, PKGhelper as ph, YAMLhelper as yh
+from helpers import LANhelper as lh, PKGhelper as ph
 
 
 class NEThelper:
-    __actions = {'package': 'install, purge', 'file': 'import, export', 'cmd': False, 'scmd': False}  # dict of acceptable actions
+    __actions = {'package': 'install, purge', 'file': 'import, export', 'cmd': False, 'scmd': False}  #dict of acceptable actions
     task_name = 'default'
     tsk_report_dir = 'tsk_reports/'
+    hard = False # parameter hard means that if any task fails, the following tasks on the host stop running
 
-    def __init__(self, lan_list):
-        self._lan_list = lan_list
+    def __init__(self, networks):
+        self._networks = networks
         self._task_list = list()
         self.__success_list = set()
 
@@ -53,27 +54,29 @@ class NEThelper:
             return True
         return False
 
-    # start task_list for lan_list
-    # parameter hard means that if any task fails, the following tasks on the host stop running
-    def start_task(self, hard=False):
-        for lan in self._lan_list:
-            return self.start_task_list(lan, hard)
-
-    # start task_list for lan_list in loopback
-    # parameter hard means that if any task fails, the following tasks on the host stop running
-    def loopback_task(self, hard=False):
-        while True:
-            return self.start_task()
+    # start task_list for networks
+    def start_task(self, fn):
+        def wrapped():
+            for lan in self._networks:
+                try:
+                    return self.start_task_list(**lan)
+                except Exception as e:
+                    return self.start_task_list(lan=lan['lan'], **fn(e))
+        return wrapped
 
     # start task for lan
-    # parameter hard means that if any task fails, the following tasks on the host stop running
-    def start_task_list(self, lan, hard=False):
-        lan, ip_range, user, pwd = lan
+    def start_task_list(self, **lan_param):
+        if not 'usr' in lan_param:
+            raise EmptyUsrException(lan_param)
+        if not 'pwd' in lan_param:
+            raise EmptyPwdException(lan_param)
 
-        def host_tasks(ip, lan=lan, user=user, pwd=pwd):
-            ip = lan + str(ip)  # generate next ip
+        lan = IPv4Network(lan_param['lan'])
+        ip_range = [str(ip) for ip in lan.hosts()]
+
+        def host_tasks(ip, user=lan_param['usr'], pwd=lan_param['pwd']):
             if ip in self._get_success_list():  # if host was completed on previous loop, than go to next host
-                print(ip + ' ready')
+                print(f'{ip} ready')
                 return True
             host = lh.LANhelper(ip, user, pwd)
             if host.connect():
@@ -83,21 +86,21 @@ class NEThelper:
                         if event == 'install':
                             pkg = ph.PKGhelper(param_list)
                             if pkg.undiscovered_pkg:
-                                print('packages ' + str(pkg.undiscovered_pkg) + ' not found')
+                                print(f'packages {str(pkg.undiscovered_pkg)} not found')
                             if not pkg.found_pkg_list:
                                 break
-                            if not host.install_package(pkg) and hard:
+                            if not host.install_package(pkg) and self.hard:
                                 break
                         if event == 'purge':
-                            if not host.purge_package(param_list) and hard:
+                            if not host.purge_package(param_list) and self.hard:
                                 break
                     if action == 'file':
                         remote_path, local_path = param_list
                         if event == 'import':
-                            if not host.import_file(remote_path, local_path) and hard:
+                            if not host.import_file(remote_path, local_path) and self.hard:
                                 break
                         if event == 'export':
-                            if not host.export_file(local_path, remote_path) and hard:
+                            if not host.export_file(local_path, remote_path) and self.hard:
                                 break
                     if action == 'cmd':
                         print(host.exec_command(event, param_list))
@@ -106,9 +109,23 @@ class NEThelper:
                 else:
                     self._save_success_list(ip)  # if all tasks were completed, than add ip of host to success_list
             else:
-                print(ip + ' connection refused')
+                print(f'{ip} connection refused')
 
         with ThreadPoolExecutor(16) as exe:
-            exe.map(host_tasks, list(ip_range), timeout=120)
+            exe.map(host_tasks, ip_range, timeout=120)
 
         return len(self.__success_list)
+
+
+class EmptyUsrException(Exception):
+    def __init__(self, lan_param):
+        self.lan = lan_param['lan']
+        super().__init__()
+
+
+class EmptyPwdException(Exception):
+    def __init__(self, lan_param):
+        self.lan = lan_param['lan']
+        self.usr = lan_param['usr']
+        super().__init__()
+

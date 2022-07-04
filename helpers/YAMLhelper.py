@@ -14,15 +14,23 @@ class YAMLhelper(object):  # Singleton pattern
         return cls.instance
 
     def __init__(self, settings_file=None):
-        if not settings_file: settings_file = self.__settings_file__
+        if not settings_file:
+            settings_file = self.__settings_file__
         if not self.__settings__:
             with open(settings_file, "r") as stream:
                 self.__settings__ = yaml.safe_load(stream)
 
     def get_networks(self):
         if self.__settings__:
-            return [[ln['lan'], range(ln['range'][0], ln['range'][1]), ln['usr'], ln['pwd']] for ln in
-                    self.__settings__['networks']]
+            return self.__settings__['networks']
+
+
+    def get_user(self):
+        if self.__settings__:
+            if not 'user' in self.__settings__:
+                return False
+            return self.__settings__['user']
+
 
     def get_db_connection(self):
         if self.__settings__:

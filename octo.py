@@ -1,44 +1,71 @@
-#!/usr/local/bin/python3.9
+#!/usr/bin/python3.7
 # -*- coding: utf-8 -*-
+
 import argparse
 import os
 
-from helpers.NEThelper import NEThelper
+from helpers.NEThelper import *
 from helpers.DBhelper import File
 from helpers.YAMLhelper import YAMLhelper
 
 networks = YAMLhelper().get_networks()  # list of lan with ip_range, user_name, user_pass
-lan = NEThelper(networks)
+net = NEThelper(networks)
+net.hard = True # abort task queue execution if at least one task failed
+
+
+# let's describe the exception handling process in the method net.start_task()
+@net.start_task
+def start_task(e):
+    pwd = False
+    if isinstance(e, EmptyPwdException):
+        usr = e.usr
+    if isinstance(e, EmptyUsrException):
+        if env_usr == 'default':
+            total_account = YAMLhelper().get_user()
+            if not total_account:
+                usr = input(f'enter username for {e.lan}: ')
+            else:
+                usr = total_account['usr']
+                if 'pwd' in total_account:
+                    pwd = total_account['pwd']
+        else:
+            usr = env_usr
+            if env_pwd != 'default':
+                pwd = env_pwd
+    if not pwd:
+        import getpass
+        pwd = getpass.getpass(f'enter password for {usr}@{e.lan}: ')
+    return {'usr': usr, 'pwd': pwd}
 
 
 def install():
-    lan.task_name = 'install'
-    lan.add_task(['package', 'install', ['antiword', 'python-libxslt1', 'odt2txt', 'wv', 'docx2txt']])  # delivery to each host required packages for recoll
-    lan.add_task(['cmd', 'sudo mkdir /root/.recoll', lambda responce, cmd, lh: lh.ip + ' ' + str(cmd) + ': ' + str(responce)])
-    lan.add_task(['file', 'import', ['/root/.recoll/recoll.conf', 'exfiles/recoll.conf']])  # delivery to each host recoll.conf
-    lan.add_task(['file', 'import', ['/var/spool/cron/crontabs/root', 'exfiles/root']])  # delivery to each host cron task for daily indexindg files
-    lan.add_task(['cmd', 'sudo service cron reload', lambda responce, cmd, lh: lh.ip + ' ' + cmd + ' : ' + responce])
-    lan.add_task(['scmd', 'sudo RECOLL_CONFDIR="/root/.recoll" recollindex', lambda cmd, lh: lh.ip + ' ' + str(cmd) + ' - was srtarted'])  # hands start task for indexing files on remote host
-    return lan.start_task(True)
+    net.task_name = 'install'
+    net.add_task(['package', 'install', ['antiword', 'python-libxslt1', 'odt2txt', 'wv', 'docx2txt']])  # delivery to each host required packages for recoll
+    net.add_task(['cmd', 'sudo mkdir /root/.recoll', lambda responce, cmd, lh: f'{lh.ip} {str(cmd)}: {str(responce)}'])
+    net.add_task(['file', 'import', ['/root/.recoll/recoll.conf', 'exfiles/recoll.conf']])  # delivery to each host recoll.conf
+    net.add_task(['file', 'import', ['/var/spool/cron/crontabs/root', 'exfiles/root']])  # delivery to each host cron task for daily indexindg files
+    net.add_task(['cmd', 'sudo service cron reload', lambda responce, cmd, lh: f'{lh.ip} {cmd}: {responce}'])
+    net.add_task(['scmd', 'sudo RECOLL_CONFDIR="/root/.recoll" recollindex', lambda cmd, lh: f'{lh.ip} {str(cmd)} - was srtarted'])  # hands start task for indexing files on remote host
+    return start_task()
 
 
 def search(request):
-    lan.task_name = 'search'
-    lan.add_task(['cmd', 'sudo recollq -m \'' + request + '\'', push_db])
-    return lan.start_task(True)
+    net.task_name = 'search'
+    net.add_task(['cmd', f'sudo recollq -m \'request\'', push_db])
+    return start_task()
 
 
 def reload_cron():
-    lan.task_name = 'reload_cron'
-    lan.add_task(['file', 'import', ['/var/spool/cron/crontabs/root', 'exfiles/root']])  # delivery to each host cron task for daily indexindg files
-    lan.add_task(['cmd', 'sudo service cron reload', lambda responce, cmd, lh: lh.ip + ' ' + cmd + ' : ' + responce])
-    return lan.start_task(True)
+    net.task_name = 'reload_cron'
+    net.add_task(['file', 'import', ['/var/spool/cron/crontabs/root', 'exfiles/root']])  # delivery to each host cron task for daily indexindg files
+    net.add_task(['cmd', 'sudo service cron reload', lambda responce, cmd, lh: f'{lh.ip} {cmd} : {responce}'])
+    return start_task()
 
 
 def index():
-    lan.task_name = 'octo_index'
-    lan.add_task(['scmd', 'sudo RECOLL_CONFDIR="/root/.recoll" recollindex', lambda cmd, lh: lh.ip + ' ' + str(cmd) + ' \n'])  # hands start task for indexing files on remote host
-    return lan.start_task(True)
+    net.task_name = 'octo_index'
+    net.add_task(['scmd', 'sudo RECOLL_CONFDIR="/root/.recoll" recollindex', lambda cmd, lh: f'{lh.ip} {str(cmd)}\n'])  # hands start task for indexing files on remote host
+    return start_task()
 
 
 # recording results of searching to DB
@@ -68,13 +95,15 @@ def push_db(responce, cmd, lh):
                 prop = {}
             prop[par[0]] = par[1]
     if write_db(prop): fcount += 1  # write to DB last result, or the only result
-    return lh.ip + ' scan completed (' + str(fcount) + ' results)'
+    return f'{lh.ip} scan completed ({str(fcount)} results)'
 
 
 if __name__ == '__main__':
     # Check OS Environment for Docker
     action = os.getenv('OCTO_MODE', 'default')
     request = os.getenv('OCTO_REQUEST', 'default')
+    env_usr = os.getenv('OCTO_USR', 'default')
+    env_pwd = os.getenv('OCTO_PWD', 'default')
 
     # Check CLI parameters
     if action == 'default':
@@ -93,15 +122,16 @@ if __name__ == '__main__':
 
     if action == 1 or action == 'install':
         print('*** Start install octo ***')
-        print('Install Octo is completed successfully on ' + str(install()) + ' hosts')
+        print(f'Install Octo is completed successfully on {str(install())} hosts')
     if action == 2 or action == 'search':
         if request == 'default':
             request = input('Enter a search query: ')
         print('*** Start scan network hosts ***')
-        print('Scan is completed on ' + str(search(request)) + ' hosts')
+        print(f'Scan is completed on {str(search(request))} hosts')
     if action == 3 or action == 'rc':
         print('*** Start reload cron  on network hosts ***')
-        print('reload_cron is completed on ' + str(reload_cron()) + ' hosts')
+        print(f'reload_cron is completed on {str(reload_cron())} hosts')
     if action == 4 or action == 'index':
         print('*** Start index hosts ***')
-        print('Indexing is completed on ' + str(index()) + ' hosts')
+        print(f'Indexing is completed on {str(index())} hosts')
+

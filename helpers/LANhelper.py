@@ -16,7 +16,7 @@ class LANhelper:
 
     # setup ssh-client connection to remote host
     def connect(self):
-        try:  # try to connect to remote host
+        try:  # try connect to remote host
             self.__client.connect(hostname=self.__ip_address, username=self._user, password=self._pwd, port=self.port)
             return True
         except Exception:
@@ -24,7 +24,7 @@ class LANhelper:
 
     # exec_command on remote host
     # used two parameters: cmd, lambda-function
-    # lambda eses three parameters: responce after command executing, cmd, ip
+    # lambda uses three parameters: responce after command executing, cmd, ip
     def exec_command(self, cmd, fn=False):
         stdin, stdout, stderr = self.__client.exec_command(cmd)
         data = stdout.read() + stderr.read()
