@@ -4,7 +4,7 @@ from helpers import LANhelper as lh, PKGhelper as ph
 
 
 class NEThelper:
-    __actions = {'package': 'install, purge', 'file': 'import, export', 'cmd': False, 'scmd': False}  #dict of acceptable actions
+    __actions = {'package': 'install, purge', 'file': 'import, export', 'cmd': False, 'scmd': False}  # dict of acceptable actions
     task_name = 'default'
     tsk_report_dir = 'tsk_reports/'
     hard = False # parameter hard means that if any task fails, the following tasks on the host stop running
