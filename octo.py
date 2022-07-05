@@ -51,7 +51,7 @@ def install():
 
 def search(request):
     net.task_name = 'search'
-    net.add_task(['cmd', f'sudo recollq -m \'request\'', push_db])
+    net.add_task(['cmd', f'recollq -m \'request\'', push_db])
     return start_task()
 
 
@@ -76,11 +76,11 @@ def push_db(responce, cmd, lh):
         expansion = os.path.splitext(prop['rcludi'])[1]
         fn = lambda responce, cmd, lh: None if prop['rcludi'] in responce else responce  # return None if octo can't get file content
         if expansion == '.odt':
-            prop['text'] = lh.exec_command('sudo odt2txt "' + prop['rcludi'] + '"', fn)
+            prop['text'] = lh.exec_command('odt2txt "' + prop['rcludi'] + '"', fn)
         if expansion == '.docx':
-            prop['text'] = lh.exec_command('sudo docx2txt "' + prop['rcludi'] + '" -', fn)
+            prop['text'] = lh.exec_command('docx2txt "' + prop['rcludi'] + '" -', fn)
         if expansion == '.doc':
-            prop['text'] = lh.exec_command('sudo antiword "' + prop['rcludi'] + '"', fn)
+            prop['text'] = lh.exec_command('antiword "' + prop['rcludi'] + '"', fn)
         file_record = File({'url': prop['url'], 'ip': lh.ip})  # check DB for existing record width this properties
         return file_record.add(prop)
 
