@@ -6,7 +6,6 @@ from helpers.YAMLhelper import YAMLhelper
 import sqlalchemy
 
 db_connection = YAMLhelper().get_db_connection()
-
 engine = create_engine(db_connection, pool_size=20)
 Session = sessionmaker(bind=engine)
 metadata = MetaData()
@@ -82,4 +81,8 @@ class File(DBModel):
 
 
 mapper(File, file_tab)  # join File object with table 'files' in DB
-if not sqlalchemy.inspect(engine).has_table(file_tab.name): metadata.create_all(engine)
+try:
+    if not sqlalchemy.inspect(engine).has_table(file_tab.name): metadata.create_all(engine)
+except:
+    print('Database connection error. Check the configuration file settings/settings.yaml')
+    exit()
