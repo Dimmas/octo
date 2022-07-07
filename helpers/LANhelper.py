@@ -44,54 +44,53 @@ class LANhelper:
 
     # check for a  package on a  remote host system
     def check_package(self, package_name):
-        data = self.exec_command('dpkg -s  ' + package_name)
+        data = self.exec_command(f'dpkg -s  {package_name}')
         if 'Status: install ok installed' in data:
             return True
-        elif 'пакет «' + package_name + '» не установлен' in data:
+        elif f'пакет «{package_name}» не установлен' in data:
             return False
 
     # uninstall package_list from remote host
     def purge_package(self, package_list):
-        rezult = True
+        result = True
         for package in package_list:
             if self.check_package(package):
-                self.exec_command('sudo dpkg -r ' + package)
+                self.exec_command(f'sudo dpkg -r {package}')
                 if self.check_package(package):
-                    print(self.__ip_address + ' error: ' + package + ' not removed')
-                    rezult = False
+                    print(f'{self.__ip_address} error: {package} not removed')
+                    result = False
                 else:
-                    print(self.__ip_address + ' ' + package + ' removed')
+                    print(f'{self.__ip_address} package removed')
             else:
-                print(self.__ip_address + ' ' + package + ' package is missing')
-        return rezult
+                print(f'{self.__ip_address} {package} package is missing')
+        return result
 
     # install packages to host
     def install_package(self, pkg):
-        rezult = True
+        result = True
         for package in pkg.found_pkg_list:
             if self.check_package(package):
-                print(self.__ip_address + ' ' + package + ' installed')
+                print(f'{self.__ip_address} {package} installed')
             else:
                 if pkg.source(package) == 'repo':
-                    self.exec_command('sudo apt-get --assume-yes install ' + package)
+                    self.exec_command(f'sudo apt-get --assume-yes install {package}')
                 else:
                     pkg_path = pkg.get_path(package)
                     try:
                         self.import_file(pkg_path, pkg_path)
                         if pkg.type(package) == 'file':
-                            self.exec_command('sudo dpkg -i ' + pkg_path)
+                            self.exec_command(f'sudo dpkg -i {pkg_path}')
                         else:
-                            self.exec_command('sudo dpkg -i ' + pkg_path + '/*')
-                        self.exec_command('sudo rm -R packages')
+                            self.exec_command(f'sudo dpkg -i {pkg_path}/*')
                     except Exception as e:
                         print(str(e))
 
                 if self.check_package(package):
-                    print(self.__ip_address + ' ' + package + ' installed')
+                    print(f'{self.__ip_address} {package} installed')
                 else:
-                    print(self.__ip_address + ' error: ' + package + ' not installed')
-                    rezult = False
-        return rezult
+                    print(f'{self.__ip_address} error: {package} not installed')
+                    result = False
+        return result
 
     # copy file from host to octo
     def export_file(self, local_path, remote_path):
@@ -101,9 +100,9 @@ class LANhelper:
             sftp.get(remote_path, file_name)
         except Exception as e:
             sftp.close()
-            print(self.__ip_address + ' ' + remote_path + ' file not exported: ' + str(e))
+            print(f'{self.__ip_address} {remote_path} file not exported: {str(e)}')
             return False
-        print(self.__ip_address + ' ' + remote_path + ' file exported success')
+        print(f'{self.__ip_address} {remote_path} file exported success')
         sftp.close()
         return True
 
@@ -125,15 +124,15 @@ class LANhelper:
             # recursive import files from subcategories
             if os.path.isdir(remote_path):
                 for f in os.listdir(remote_path):
-                    self.import_file(local_path + '/' + f, remote_path + '/' + f)
+                    self.import_file(f'{local_path}/{f}', f'{remote_path}/{f}')
             else:
                 sftp.put(local_path, file_name)
-                self.exec_command('sudo mv ' + file_name + ' ' + remote_path)
+                self.exec_command(f'sudo mv {file_name} {remote_path}')
         except Exception as e:
             sftp.close()
-            print(self.__ip_address + ' ' + local_path + ' file not imported: ' + str(e))
+            print(f'{self.__ip_address} {local_path} file not imported: {str(e)}')
             return False
-        print(self.__ip_address + ' ' + local_path + ' file was imported success')
+        print(f'{self.__ip_address} {local_path} file was imported success')
         sftp.close()
         return True
 
