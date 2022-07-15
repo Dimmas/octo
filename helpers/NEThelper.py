@@ -1,4 +1,4 @@
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Network
 from concurrent.futures import ThreadPoolExecutor
 from helpers import LANhelper as lh, PKGhelper as ph
 
@@ -14,8 +14,12 @@ class NEThelper:
         self._task_list = list()
         self.__success_list = set()
 
-    # get ip of hosts, where tasks were completed from task file. Fill self.__success_list
-    def _get_success_list(self):
+    def _get_success_list(self) -> set:
+        """
+        get ip of hosts, where tasks were completed from task file (tsk_reports/self.task_name). Fill self.__success_list
+
+        :return: a list of ip addresses of hosts on which the task was completed successfully.
+        """
         try:
             with open(self.tsk_report_dir+self.task_name) as success_file:
                 self.__success_list = {ip.strip() for ip in success_file.readlines()}
@@ -23,18 +27,29 @@ class NEThelper:
             self.__success_list = set()
         return self.__success_list
 
-    # save self.__success_list to task file
-    def _save_success_list(self, ip):
+    def _save_success_list(self, ip: str) -> bool:
+        """
+        saves the ip addresses of the hosts on which the tasks were completed successfully to a file.
+        The file is named = tsk_reports/self.task_name. When the task is restarted, hosts with ip addresses from the file are skipped.
+
+        :param ip: the ip address of the host where all tasks were completed successfully.
+        :return: true if writing to the file is successful and false otherwise.
+        """
         self.__success_list.add(ip)
         try:
             with open(self.tsk_report_dir+self.task_name, 'w') as success_file:
-                success_file.writelines('%s\n' % ip for ip in self.__success_list)
+                success_file.writelines(f'{ip}\n' for ip in self.__success_list)
         except Exception:
             return False
         return True
 
-    # check available actions in __actions dictionary and normalize parameters
-    def _prepare_task(self, task):
+    def _prepare_task(self, task: list):
+        """
+        check available actions in __actions dictionary and normalize parameters
+
+        :param task: the list is a formalized representation of the task
+        :return: normalize parameters or false, if actions is not exists in __actions
+        """
         action, *other = task
         if not action in self.__actions.keys():
             return False
@@ -47,15 +62,33 @@ class NEThelper:
             return False
         return task
 
-    def add_task(self, task):
+    def add_task(self, task: list) -> bool:
+        """
+        Checks the array representation of the task and adds it to the task queue for subsequent execution on the network nodes.
+
+        :param task: the list is an image of the task.
+            Examples:
+                ['package', 'install', ['antiword', 'python-libxslt1', 'odt2txt', 'wv', 'docx2txt']]
+                ['package', 'purge', ['antiword', 'python-libxslt1', 'odt2txt', 'wv', 'docx2txt']]
+                ['file', 'import', ['/some_path/somefile', 'exfiles/somefile']]
+                ['file', 'export', ['/some_path/somefile', 'exfiles/somefile']]
+                ['cmd', 'sudo service cron reload', lambda responce, cmd, lh: f'{lh.ip} {cmd}: {responce}']
+        :return: result of adding a task to the queue
+        """
         task = self._prepare_task(task)
         if task:
             self._task_list.append(task)
             return True
         return False
 
-    # start task_list for networks
-    def start_task(self, fn):
+
+    def start_task(self, fn) -> int:
+        """
+        task queue execution starts for each of the ip networks
+
+        :param fn: callback function for exception handling
+        :return: number of hosts on which all tasks were completed successfully
+        """
         def wrapped():
             for lan in self._networks:
                 try:
@@ -64,8 +97,14 @@ class NEThelper:
                     return self.start_task_list(lan=lan['lan'], **fn(e))
         return wrapped
 
-    # start task for lan
-    def start_task_list(self, **lan_param):
+
+    def start_task_list(self, **lan_param) -> int:
+        """
+        Bypasses network nodes and executes a queue of tasks on each.
+
+        :param lan_param: ip network address with a prefix, usr - the user's login, pwd - his password
+        :return: number of hosts on which all tasks were completed successfully
+        """
         if not 'usr' in lan_param:
             raise EmptyUsrException(lan_param)
         if not 'pwd' in lan_param:

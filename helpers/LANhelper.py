@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import paramiko
+import helpers.PKGhelper as PKGhelper
 
 
 class LANhelper:
@@ -14,18 +15,27 @@ class LANhelper:
         self.__client = paramiko.SSHClient()
         self.__client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    # setup ssh-client connection to remote host
-    def connect(self):
-        try:  # try connect to remote host
+    def connect(self) -> bool:
+        """
+        setup ssh-client connection to remote host
+
+        :return: true if ssh connection to the host is successfully established and false if there is no such connection
+        """
+        try:
             self.__client.connect(hostname=self.__ip_address, username=self._user, password=self._pwd, port=self.port)
             return True
         except Exception:
             return False
 
-    # exec_command on remote host
-    # used two parameters: cmd, lambda-function
-    # lambda uses three parameters: responce after command executing, cmd, ip
-    def exec_command(self, cmd, fn=False):
+    def exec_command(self, cmd: str, fn=False) -> str:
+        """
+        executing a terminal command on a remote host.
+
+        :param cmd: command to the remote host to execute in the terminal
+        :param fn: а function for processing the result returned after executing a command in a terminal on a remote host.
+            The callback function accepts three parameters: the result of executing a terminal command on a remote host, the command itself, and an object of the helpers.LANhelper.
+        :return: the result of executing a terminal command on a remote host.
+        """
         stdin, stdout, stderr = self.__client.exec_command(cmd)
         data = stdout.read() + stderr.read()
         data = data.decode('utf8', 'ignore')
@@ -33,25 +43,41 @@ class LANhelper:
             return fn(data, cmd, self)
         return data
 
-    # exec_command on remote host without responce
-    # used two parameters: cmd, lambda-function
-    # lambda uses two parameters: cmd, ip
-    def silent_exec_command(self, cmd, fn=False):
+    def silent_exec_command(self, cmd: str, fn=False) -> bool:
+        """
+        executing a terminal command on a remote host in silent mode.
+
+        :param cmd: command to the remote host to execute in the terminal
+        :param fn: а function for processing the result returned after executing a command in a terminal on a remote host.
+            The callback function accepts two parameters: a terminal command on a remote host, the command itself, and an object of the helpers.LANhelper.
+        :return: Returns true if the task was run on a remote host and false otherwise.
+        """
         self.__client.exec_command(cmd)
         if fn:
             return fn(cmd, self)
         return True
 
     # check for a  package on a  remote host system
-    def check_package(self, package_name):
+    def check_package(self, package_name: str) -> bool:
+        """
+        checks whether the specified package is installed on the remote host
+
+        :param package_name: package name
+        :return: true - if the package is installed on the remote host and false otherwise.
+        """
         data = self.exec_command(f'dpkg -s  {package_name}')
         if 'Status: install ok installed' in data:
             return True
         elif f'пакет «{package_name}» не установлен' in data:
             return False
 
-    # uninstall package_list from remote host
-    def purge_package(self, package_list):
+    def purge_package(self, package_list: list) -> bool:
+        """
+        uninstall packages from remote host
+
+        :param package_list: list of packages to remove
+        :return: true if all packages are successfully deleted and false otherwise.
+        """
         result = True
         for package in package_list:
             if self.check_package(package):
@@ -65,8 +91,13 @@ class LANhelper:
                 print(f'{self.__ip_address} {package} package is missing')
         return result
 
-    # install packages to host
-    def install_package(self, pkg):
+    def install_package(self, pkg: PKGhelper) -> bool:
+        """
+        install packages to remote host
+
+        :param pkg: object of helpers.PKGhelper
+        :return: true if all packages are successfully installed and false otherwise.
+        """
         result = True
         for package in pkg.found_pkg_list:
             if self.check_package(package):
@@ -92,8 +123,14 @@ class LANhelper:
                     result = False
         return result
 
-    # copy file from host to octo
-    def export_file(self, local_path, remote_path):
+    def export_file(self, local_path: str, remote_path: str) -> bool:
+        """
+        copy file from remote host to host with octo
+
+        :param local_path: path to file on host with octo
+        :param remote_path: path to file on remote host
+        :return: true if the file export was successful and false otherwise.
+        """
         sftp = self.__client.open_sftp()
         try:
             file_name = local_path.split('/')[-1]
@@ -106,8 +143,14 @@ class LANhelper:
         sftp.close()
         return True
 
-    # copy file from octo to host
-    def import_file(self, remote_path, local_path):
+    def import_file(self, remote_path: str, local_path: str) -> bool:
+        """
+        copy file from host with octo to remote host
+
+        :param remote_path: path to file on remote host
+        :param local_path: path to file on host with octo
+        :return: true if the file import was successful and false otherwise.
+        """
         sftp = self.__client.open_sftp()
         try:
             path = os.path.split(local_path)

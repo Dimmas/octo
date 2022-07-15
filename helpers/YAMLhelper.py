@@ -20,19 +20,31 @@ class YAMLhelper(object):  # Singleton pattern
             with open(settings_file, "r") as stream:
                 self.__settings__ = yaml.safe_load(stream)
 
-    def get_networks(self):
+    def get_networks(self) -> list:
+        """
+
+        :return: list of networks for scan from section networks of settings/settings.yaml
+        """
         if self.__settings__:
             return self.__settings__['networks']
 
 
-    def get_user(self):
+    def get_user(self) -> dict:
+        """
+
+        :return: dict {'usr': username, 'pwd': userpassword} from section user of settings/settings.yaml
+        """
         if self.__settings__:
             if not 'user' in self.__settings__:
                 return False
             return self.__settings__['user']
 
 
-    def get_db_connection(self):
+    def get_db_connection(self) -> str:
+        """
+
+        :return: a string to connect to the database in the format postgresql://dbuser:userpwd@localhost:5432/dbname
+        """
         if self.__settings__:
             return self.__settings__['db_connection']['dbms'] + \
                    '://' + \
